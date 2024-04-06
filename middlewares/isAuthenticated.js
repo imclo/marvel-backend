@@ -9,6 +9,7 @@ const isAuthenticated = async (req, res, next) => {
     "account"
   );
   if (userConnected) {
+    console.log("Valid token, authorization given");
     req.user = userConnected;
     next();
   } else {
