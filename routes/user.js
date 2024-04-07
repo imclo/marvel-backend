@@ -8,29 +8,44 @@ const User = require("../models/User");
 
 router.post("/user/signup", async (req, res) => {
   try {
-    const salt = uid2(16);
-    const hash = SHA256(req.body.password + salt).toString(encBase64);
-    const token = uid2(64);
+    // console.log(req.body);
 
-    const existingMail = await User.findOne({ email: req.body.email });
-    if (existingMail) {
-      return res.status(200).json({ message: "Email already exists" });
+    const password = req.body.password;
+    // console.log("password   ", password);
+    const salt = uid2(16);
+    // console.log("salt   ", salt);
+    const hash = SHA256(req.body.password + salt).toString(encBase64);
+    // console.log("hash    ", hash);
+    const token = uid2(64);
+    // console.log("token   ", token);
+
+    const existingUser = await User.find({ email: req.body.email });
+    // console.log(existingUser.email);
+
+    console.log(existingUser);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: "email already existed" });
     }
-    if (!req.body.username) {
-      return res.status(200).json({ message: "Username missing" });
+
+    console.log(req.body.username);
+    if (req.body.username.length === 0) {
+      return res.status(400).json({ message: "no username defined" });
     }
 
     const newUser = new User({
-      username: req.body.username,
       email: req.body.email,
-      token,
-      hash,
-      salt,
+      account: {
+        username: req.body.username,
+      },
+      token: token,
+      hash: hash,
+      salt: salt,
     });
 
     await newUser.save();
-
-    res.status(201).json(newUser);
+    res
+      .status(201)
+      .json({ id: newUser.id, token: newUser.token, account: newUser.account });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -38,24 +53,28 @@ router.post("/user/signup", async (req, res) => {
 
 router.post("/user/login", async (req, res) => {
   try {
-    const login = await User.findOne({ email: req.body.email });
-    if (!login) {
-      return res.status(401).json({ message: "Email or password incorrect" });
+    const existingUser = await User.findOne({ email: req.body.email });
+    // console.log(existingUser);
+
+    if (!existingUser) {
+      // ou === null
+      return res.status(400).json({ message: "email or password incorrect" });
     }
 
-    const newHash = SHA256(req.body.password + login.salt).toString(encBase64);
+    const hash2 = SHA256(req.body.password + existingUser.salt).toString(
+      encBase64
+    );
 
-    if (newHash === login.hash) {
-      res.status(200).json({
-        _id: login._id,
-        token: login.token,
-        email: login.email,
+    if (hash2 === existingUser.hash) {
+      return res.status(201).json({
+        _id: existingUser.id,
+        token: existingUser.token,
+        account: { username: existingUser.account.username },
       });
-    } else {
-      return res.status(401).json({ message: "Email or password incorrect" });
     }
+    res.status(400).json({ message: "email or password incorrect" });
 
-    // await login.save();
+    // await existingUser.save();
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
