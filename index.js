@@ -16,7 +16,6 @@ const comicsCharacterRoutes = require("./routes/comics.character");
 const charactersRoutes = require("./routes/characters");
 const characterRoutes = require("./routes/characterId");
 const userRoutes = require("./routes/user");
-const favoritesRoutes = require("./routes/favorites");
 
 app.use(comicsRoutes);
 app.use(comicRoutes);
@@ -24,7 +23,6 @@ app.use(comicsCharacterRoutes);
 app.use(charactersRoutes);
 app.use(characterRoutes);
 app.use(userRoutes);
-app.use(favoritesRoutes);
 
 app.get("/", (req, res) => {
   res.json(201).json({ message: "Welcome to Marvel universe!" });
