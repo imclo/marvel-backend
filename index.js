@@ -1,11 +1,16 @@
 require("dotenv").config();
+
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 
-const mongoose = require("mongoose");
+const uid2 = require("uid2");
+const SHA256 = require("crypto-js/sha256");
+const encBase64 = require("crypto-js/enc-base64");
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 
 mongoose.connect(process.env.MONGODB_URI);
 

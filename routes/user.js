@@ -1,8 +1,10 @@
 const express = require("express");
+
 const router = express.Router();
+
 const uid2 = require("uid2");
-const encBase64 = require("crypto-js/enc-base64");
 const SHA256 = require("crypto-js/sha256");
+const encBase64 = require("crypto-js/enc-base64");
 
 const User = require("../models/User");
 
@@ -22,12 +24,12 @@ router.post("/user/signup", async (req, res) => {
     const existingUser = await User.find({ email: req.body.email });
     // console.log(existingUser.email);
 
-    console.log(existingUser);
+    // console.log(existingUser);
     if (existingUser.length > 0) {
       return res.status(400).json({ message: "email already existed" });
     }
 
-    console.log(req.body.username);
+    // console.log(req.body.username);
     if (req.body.username.length === 0) {
       return res.status(400).json({ message: "no username defined" });
     }
