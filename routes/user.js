@@ -1,50 +1,36 @@
 const express = require("express");
 const router = express.Router();
-
 const uid2 = require("uid2");
-const SHA256 = require("crypto-js/sha256");
 const encBase64 = require("crypto-js/enc-base64");
+const SHA256 = require("crypto-js/sha256");
 
 const User = require("../models/User");
 
 router.post("/user/signup", async (req, res) => {
   try {
-    const username = req.body.username;
-    const email = req.body.email;
-    const password = req.body.password;
-    const favoriteCharacters = req.body.favoriteCharacters;
-    const favoriteComics = req.body.favoriteComics;
-
     const salt = uid2(16);
-    const hash = SHA256(password + salt).toString(encBase64);
-    const token = uid2(16);
+    const hash = SHA256(req.body.password + salt).toString(encBase64);
+    const token = uid2(64);
 
-    const emailAlreadyExist = await User.find({ email: req.body.email });
-    if (emailAlreadyExist[0] !== undefined) {
-      return res.status(400).json({ message: "Email already exist" });
+    const existingMail = await User.findOne({ email: req.body.email });
+    if (existingMail) {
+      return res.status(200).json({ message: "Email already exists" });
+    }
+    if (!req.body.username) {
+      return res.status(200).json({ message: "Username missing" });
     }
 
     const newUser = new User({
-      email: email,
-      account: {
-        username: username,
-        favorites: {
-          favCharacters: favoriteCharacters,
-          favComics: favoriteComics,
-        },
-      },
-      token: token,
-      hash: hash,
-      salt: salt,
+      username: req.body.username,
+      email: req.body.email,
+      token,
+      hash,
+      salt,
     });
 
     await newUser.save();
 
-    res.status(200).json({
-      _id: newUser._id,
-      token: newUser.token,
-      account: newUser.account,
-    });
+    res.status(201).json(newUser);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -52,29 +38,24 @@ router.post("/user/signup", async (req, res) => {
 
 router.post("/user/login", async (req, res) => {
   try {
-    const email = req.body.email;
-    const password = req.body.password;
-    const favoriteCharacters = req.body.favoriteCharacters;
-    const favoriteComics = req.body.favoriteComics;
-
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      return res.status(401).json({ message: "Email doesn't exist" });
+    const login = await User.findOne({ email: req.body.email });
+    if (!login) {
+      return res.status(401).json({ message: "Email or password incorrect" });
     }
 
-    // Add a function which adds favorites checked to favorites in database
+    const newHash = SHA256(req.body.password + login.salt).toString(encBase64);
 
-    const salt = user.salt;
-    const hash = SHA256(password + salt).toString(encBase64);
-    if (hash === user.hash) {
+    if (newHash === login.hash) {
       res.status(200).json({
-        _id: user._id,
-        token: user.token,
-        account: user.account,
+        _id: login._id,
+        token: login.token,
+        email: login.email,
       });
     } else {
-      res.status(401).json({ message: "Password doesn't match" });
+      return res.status(401).json({ message: "Email or password incorrect" });
     }
+
+    // await login.save();
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
